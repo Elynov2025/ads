@@ -1,8 +1,7 @@
-/* injector-iframe.js — вставляет iframe с RTB после 6-го абзаца */
+/* injector-iframe.js — вставляет iframe с RTB (srcdoc) после 6-го абзаца */
 (function () {
   "use strict";
 
-  var IFRAME_SRC = "https://elynov2025.github.io/rtb-injector/ad.html"; // ваша страница с рекламой
   var TARGET_IDX = 5; // после 6-го абзаца (индексация с нуля)
   var SELECTORS = [
     '[itemprop="articleBody"]',
@@ -12,6 +11,32 @@
     'main .content', 'main'
   ];
   var ONE_PER_CONTAINER = true;
+
+  // HTML содержимое будущего iframe (то, что было в ad.html)
+  var SRC_DOC = [
+    '<!doctype html><html lang="ru"><head><meta charset="utf-8" />',
+    '<meta name="viewport" content="width=device-width, initial-scale=1" />',
+    '<style>html,body{margin:0;padding:0;background:transparent}#wrap{display:block;width:100%;}</style>',
+    '<script src="https://yandex.ru/ads/system/context.js" async><\/script>',
+    '</head><body>',
+    '<div id="wrap"><div id="yandex_rtb_R-A-14383531-4"></div></div>',
+    '<script>',
+      'window.yaContextCb = window.yaContextCb || [];',
+      'window.yaContextCb.push(function(){',
+        'Ya.Context.AdvManager.render({',
+          'blockId:"R-A-14383531-4",',
+          'renderTo:"yandex_rtb_R-A-14383531-4",',
+          'onRender:function(){',
+            'setTimeout(function(){',
+              'var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);',
+              'parent.postMessage({rtbFrame:true,height:h}, "*");',
+            '},150);',
+          '}',
+        '});',
+      '});',
+    '<\/script>',
+    '</body></html>'
+  ].join('');
 
   function getContainers(root){
     var out = [];
@@ -37,7 +62,8 @@
     var anchor = ps[idx];
 
     var iframe = document.createElement("iframe");
-    iframe.src = IFRAME_SRC;
+    // ключевая строка: вместо src используем srcdoc
+    iframe.srcdoc = SRC_DOC;
     iframe.allow = "fullscreen";
     iframe.loading = "lazy";
     iframe.style.width = "100%";
@@ -57,8 +83,11 @@
   window.addEventListener("message", function (e) {
     var d = e.data || {};
     if (d && d.rtbFrame && typeof d.height === "number") {
-      document.querySelectorAll('iframe[src*="/rtb-injector/ad.html"]').forEach(function(f){
-        f.style.height = Math.max(250, d.height) + "px";
+      // находим все iframes без src (с srcdoc)
+      document.querySelectorAll('iframe').forEach(function(f){
+        if (!f.hasAttribute('src') && f.srcdoc) {
+          f.style.height = Math.max(250, d.height) + "px";
+        }
       });
     }
   });
@@ -67,7 +96,6 @@
     document.addEventListener("DOMContentLoaded", function(){ run(document); });
   } else { run(document); }
 
-  // Поддержка SPA/динамической подгрузки
   if ("MutationObserver" in window) {
     var mo = new MutationObserver(function(muts){
       muts.forEach(function(m){
