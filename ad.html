@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html,body{margin:0;padding:0;background:transparent}
+    #wrap{display:block;width:100%;}
+  </style>
+  <!-- Скрипт Яндекса грузится ВНУТРИ iframe -->
+  <script src="https://yandex.ru/ads/system/context.js" async></script>
+</head>
+<body>
+  <div id="wrap">
+    <div id="yandex_rtb_R-A-14383531-4"></div>
+  </div>
+
+  <script>
+    // Рендер и передача высоты в родителя для авто-ресайза
+    window.yaContextCb = window.yaContextCb || [];
+    window.yaContextCb.push(function () {
+      Ya.Context.AdvManager.render({
+        blockId: "R-A-14383531-4",
+        renderTo: "yandex_rtb_R-A-14383531-4",
+        onRender: function () {
+          setTimeout(function () {
+            var h = Math.max(
+              document.body.scrollHeight,
+              document.documentElement.scrollHeight
+            );
+            parent.postMessage({ rtbFrame: true, height: h }, "*");
+          }, 150);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
