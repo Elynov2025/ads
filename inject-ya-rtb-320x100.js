@@ -1,28 +1,32 @@
 (function(){
   var CFG = {
-    BLOCK_ID: 'R-A-14383531-11',
-    CONTAINER_ID: 'yandex_rtb_R-A-14383531-11',
-    WRAP_ID: 'ya-rtb-320x100-after-last-p',
-    WIDTH: 320, HEIGHT: 100,
+    BLOCK_ID: 'R-A-14383531-11',                  // ваш RTB-блок (убедитесь, что он настроен 300x250)
+    CONTAINER_ID: 'yandex_rtb_R-A-14383531-11',   // сюда рендерим
+    WRAP_ID: 'ya-rtb-300x250-after-last-p',       // якорь, чтобы не дублировать
+    WIDTH: 300, HEIGHT: 250,
     DEBUG: false, LAZY_MARGIN: '600px'
   };
+
   function log(){ if(CFG.DEBUG) console.log.apply(console, arguments); }
+
   function visible(el){
     if(!el) return false;
     if(!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)) return false;
     var cs = getComputedStyle(el);
     return cs && cs.visibility!=='hidden' && cs.display!=='none';
   }
+
   function contentRoot(){
     var sels = [
       '[data-hook="post-content"]',
       '[data-testid="richContentRenderer"]',
       'article [data-hook*="content"]',
-      'article','main article','main'
+      'article', 'main article', 'main'
     ];
     for(var i=0;i<sels.length;i++){ var el=document.querySelector(sels[i]); if(el) return el; }
     return document.body;
   }
+
   function lastTextBlock(root){
     var candidates = [].slice.call(root.querySelectorAll(
       'p, li, blockquote, .wixui-rich-text__text, [data-testid="richTextElement"]'
@@ -33,7 +37,6 @@
       var txt=(el.textContent||'').trim();
       if(txt.length>=20) return el;
     }
-    // fallback: любой видимый элемент с текстом
     var all=[].slice.call(root.querySelectorAll('*'));
     for(var j=all.length-1;j>=0;j--){
       var e=all[j];
@@ -42,6 +45,7 @@
     }
     return null;
   }
+
   function buildAnchor(){
     var wrap=document.getElementById(CFG.WRAP_ID);
     if(wrap) return wrap;
@@ -54,6 +58,7 @@
     box.appendChild(cont); wrap.appendChild(box);
     return wrap;
   }
+
   function placeAnchor(){
     var root=contentRoot();
     var last=lastTextBlock(root);
@@ -62,6 +67,7 @@
     if(!wrap.parentNode){ last.insertAdjacentElement('afterend', wrap); }
     return wrap;
   }
+
   function ensureContext(cb){
     window.yaContextCb = window.yaContextCb || [];
     if(window.Ya && Ya.Context && Ya.Context.AdvManager){ cb(); return; }
@@ -74,25 +80,29 @@
       s.onerror=function(){ iframeFallback(); };
       document.head.appendChild(s);
     }
-    // таймаут на случай блокировок
     setTimeout(function(){
       if(!(window.Ya && Ya.Context && Ya.Context.AdvManager)) iframeFallback();
     }, 3000);
     window.yaContextCb.push(cb);
   }
+
   function render(){
     try{
-      Ya.Context.AdvManager.render({ blockId: CFG.BLOCK_ID, renderTo: CFG.CONTAINER_ID });
-      log('[ya-rtb] rendered');
+      Ya.Context.AdvManager.render({
+        blockId: CFG.BLOCK_ID,
+        renderTo: CFG.CONTAINER_ID
+      });
+      log('[ya-rtb] rendered 300x250');
     }catch(e){
       log('[ya-rtb] render error', e);
       iframeFallback();
     }
   }
+
   function iframeFallback(){
     var wrap=placeAnchor();
     if(!wrap) return;
-    if(wrap.getAttribute('data-iframed')==='1') return; // уже делали фоллбэк
+    if(wrap.getAttribute('data-iframed')==='1') return;
     wrap.setAttribute('data-iframed','1');
     var iframe=document.createElement('iframe');
     iframe.width=CFG.WIDTH; iframe.height=CFG.HEIGHT;
@@ -104,27 +114,4 @@
       +'</body></html>';
     if('srcdoc' in iframe){ iframe.srcdoc=html; }
     else { var blob=new Blob([html],{type:'text/html'}); iframe.src=URL.createObjectURL(blob); }
-    var box=wrap.firstChild; box.innerHTML=''; box.appendChild(iframe);
-    log('[ya-rtb] iframe fallback used');
-  }
-  function init(){
-    var wrap=placeAnchor();
-    if(!wrap) return;
-    if('IntersectionObserver' in window){
-      var io=new IntersectionObserver(function(entries){
-        entries.forEach(function(ent){
-          if(ent.isIntersecting){ io.disconnect(); ensureContext(render); }
-        });
-      },{root:null, rootMargin:CFG.LAZY_MARGIN, threshold:0});
-      io.observe(wrap);
-    } else {
-      ensureContext(render);
-    }
-  }
-  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
-  ready(function(){
-    init(); setTimeout(init,800); setTimeout(init,2000);
-    var mo=new MutationObserver(function(){ init(); });
-    mo.observe(document.body,{childList:true,subtree:true});
-  });
-})();
+    var box=wrap.fi
